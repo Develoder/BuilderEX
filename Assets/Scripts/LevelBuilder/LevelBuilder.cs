@@ -6,14 +6,17 @@ using UnityEditor;
 public class LevelBuilder : EditorWindow
 {
     private const string _path = "Assets/Editor Resources/Buildings";
-
+    private const int _rayLayerMask = 1 << 6; // Ground
+    
     private Vector2 _scrollPosition;
     private int _selectedElement;
+    private int _lastSelectedElement;
     private List<GameObject> _catalog = new List<GameObject>();
     private bool _building;
 
     private GameObject _createdObject;
-    private GameObject _parent;
+    private GameObject[] _parents = new GameObject[3]; // 0 - Gound, 1 - Buildings, 2 - Environments
+    private GameObject _previewObject;
 
     [MenuItem("Level/Builder")]
     private static void ShowWindow()
@@ -30,7 +33,8 @@ public class LevelBuilder : EditorWindow
 
     private void OnGUI()
     {
-        _parent = (GameObject)EditorGUILayout.ObjectField("Parent", _parent, typeof(GameObject), true);
+        DrawParents();
+        
         EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
         if (_createdObject != null)
         {
@@ -48,44 +52,95 @@ public class LevelBuilder : EditorWindow
         DrawCatalog(GetCatalogIcons());
         EditorGUILayout.EndScrollView();
         EditorGUILayout.EndVertical();
+        
+        CheckChangeItemCatalog();
     }
 
-    private void OnSceneGUI(SceneView sceneView)
+   private void OnSceneGUI(SceneView sceneView)
     {
-        if (_building)
+        if (!_building)
         {
-            if (Raycast(out Vector3 contactPoint))
-            {
-                DrawPounter(contactPoint, Color.red);
-
-                if (CheckInput())
-                {
-                    CreateObject(contactPoint);
-                }
-
-                sceneView.Repaint();
-            }
+            if (_previewObject != null)
+                DestroyPreviewObject();
+            return;
         }
+        if (!Raycast(out Vector3 contactPoint)) 
+            return;
+        
+        //DrawPointer(contactPoint, Color.red);
+        DrawPreview(contactPoint);
+
+        if (CheckInput())
+        {
+            CreateObject(contactPoint);
+        }
+
+        sceneView.Repaint();
     }
+   
+   private void DrawParents()
+   {
+       EditorGUILayout.LabelField("Parents");
+       
+       EditorGUILayout.BeginVertical(GUI.skin.box);
+       _parents[0] = (GameObject)EditorGUILayout.ObjectField("Ground", _parents[0], typeof(GameObject), true);
+       _parents[1] = (GameObject)EditorGUILayout.ObjectField("Buildings", _parents[1], typeof(GameObject), true);
+       _parents[2] = (GameObject)EditorGUILayout.ObjectField("Environments", _parents[2], typeof(GameObject), true);
+       EditorGUILayout.EndVertical();
+   }
+    
 
     private bool Raycast(out Vector3 contactPoint)
     {
         Ray guiRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
         contactPoint = Vector3.zero;
 
-        if (Physics.Raycast(guiRay, out RaycastHit raycastHit))
+        if (Physics.Raycast(guiRay, out RaycastHit raycastHit, Mathf.Infinity, _rayLayerMask))
         {
             contactPoint = raycastHit.point;
             return true;
         }
-
+        
+        if (_previewObject != null)
+            _previewObject.transform.position = Vector3.up * int.MaxValue;
         return false;
     }
 
-    private void DrawPounter(Vector3 position, Color color)
+    private void DrawPointer(Vector3 position, Color color)
     {
         Handles.color = color;
         Handles.DrawWireCube(position, Vector3.one);
+    }
+    
+    private void DrawPreview(Vector3 contactPoint)
+    {
+        if (_previewObject == null)
+            CreatePreviewObject();
+
+        _previewObject.transform.position = contactPoint;
+    }
+
+    private void CheckChangeItemCatalog()
+    {
+        if (_lastSelectedElement == _selectedElement)
+            return;
+        
+        if(_previewObject != null)
+            DestroyImmediate(_previewObject);
+        
+        CreatePreviewObject();
+    }
+
+    private void CreatePreviewObject()
+    {
+        _lastSelectedElement = _selectedElement;
+        _previewObject = Instantiate(_catalog[_selectedElement]);
+        _previewObject.transform.name = "PreviewObject";
+    }
+
+    private void DestroyPreviewObject()
+    {
+        DestroyImmediate(_previewObject);
     }
 
     private bool CheckInput()
@@ -97,16 +152,14 @@ public class LevelBuilder : EditorWindow
 
     private void CreateObject(Vector3 position)
     {
-        if (_selectedElement < _catalog.Count)
-        {
-            GameObject prefab = _catalog[_selectedElement];
-            //GameObject gameObject = PrefabUtility.InstantiatePrefab(prefab) as GameObject;
-            _createdObject = Instantiate(prefab);
-            _createdObject.transform.position = position;
-            _createdObject.transform.parent = _parent.transform;
+        if (_selectedElement >= _catalog.Count) return;
+        
+        GameObject prefab = _catalog[_selectedElement];
 
-            Undo.RegisterCreatedObjectUndo(_createdObject, "Create Building");
-        }
+        _createdObject = Instantiate(prefab, _parents[1].transform, true);
+        _createdObject.transform.position = position;
+
+        Undo.RegisterCreatedObjectUndo(_createdObject, "Create Building");
     }
 
     private void DrawCatalog(List<GUIContent> catalogIcons)
