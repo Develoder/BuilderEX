@@ -8,7 +8,9 @@ using UnityEditor;
 public class LevelBuilder : EditorWindow
 {
     private const string _path = "Assets/Editor Resources/";
-    private const int _rayLayerMask = 1 << 6; // Ground
+    private const int _groundLayerMask = 1 << 6; // Ground
+    private const int _TileLayerMask = 1 << 7; // Buildings
+    private const int _buildingsLayerMask = 1 << 8; // Buildings
     
     private Vector2 _scrollPosition;
     private int _selectedElement;
@@ -89,8 +91,9 @@ public class LevelBuilder : EditorWindow
         if (_selectedConstruction == Construction.Ground)
         {
             // Блок превью для тайла
-            CheckAllow(contactPoint);
-            CreateObject(contactPoint);
+            if(CheckAllow(contactPoint))
+                if (CheckInput())
+                    CreateObject(contactPoint);
         }
         else
         {
@@ -124,7 +127,7 @@ public class LevelBuilder : EditorWindow
         Ray guiRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
         contactPoint = Vector3.zero;
 
-        if (Physics.Raycast(guiRay, out RaycastHit raycastHit, Mathf.Infinity, _rayLayerMask))
+        if (Physics.Raycast(guiRay, out RaycastHit raycastHit, Mathf.Infinity, _groundLayerMask))
         {
             contactPoint = raycastHit.point;
             return true;
@@ -289,12 +292,12 @@ public class LevelBuilder : EditorWindow
         Quaternion rotation = Quaternion.Euler(0, 0, 0);
         Mesh mesh = _catalog[_selectedElement].GetComponentsInChildren<MeshFilter>()[0].sharedMesh;
         Vector3 meshSize = mesh.bounds.size;
-        Collider[] colliders = Physics.OverlapBox(position, meshSize, rotation, 0);
+        Collider[] colliders = Physics.OverlapBox(position, meshSize, rotation, _buildingsLayerMask);
 
         foreach (var collider in colliders)
         {
             Debug.Log(collider.gameObject.name);
         }
-        return true ;
+        return true;
     }
 }
