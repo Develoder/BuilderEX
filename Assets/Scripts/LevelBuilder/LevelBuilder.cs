@@ -66,12 +66,13 @@ public class LevelBuilder : EditorWindow
         }
         if (!Raycast(out Vector3 contactPoint)) 
             return;
-        
-        //DrawPointer(contactPoint, Color.red);
+
+        DrawPointer(contactPoint,Color.red);
         DrawPreview(contactPoint);
 
         if (CheckInput())
         {
+            CheckAllow(contactPoint);
             CreateObject(contactPoint);
         }
 
@@ -109,7 +110,11 @@ public class LevelBuilder : EditorWindow
     private void DrawPointer(Vector3 position, Color color)
     {
         Handles.color = color;
-        Handles.DrawWireCube(position, Vector3.one);
+        Quaternion rotation = Quaternion.Euler(0, 0, 0);
+        Mesh mesh = _catalog[_selectedElement].GetComponentsInChildren<MeshFilter>()[0].sharedMesh;
+        Vector3 meshSize = mesh.bounds.size;
+        Collider[] colliders = Physics.OverlapBox(position, meshSize, rotation, 6);
+        Handles.DrawWireCube(position, meshSize);
     }
     
     private void DrawPreview(Vector3 contactPoint)
@@ -189,5 +194,19 @@ public class LevelBuilder : EditorWindow
         string[] prefabFiles = System.IO.Directory.GetFiles(_path, "*.prefab");
         foreach (var prefabFile in prefabFiles)
             _catalog.Add(AssetDatabase.LoadAssetAtPath(prefabFile, typeof(GameObject)) as GameObject);
+    }
+
+    private bool CheckAllow(Vector3 position)
+    {
+        Quaternion rotation = Quaternion.Euler(0, 0, 0);
+        Mesh mesh = _catalog[_selectedElement].GetComponentsInChildren<MeshFilter>()[0].sharedMesh;
+        Vector3 meshSize = mesh.bounds.size;
+        Collider[] colliders = Physics.OverlapBox(position, meshSize, rotation, 0);
+
+        foreach (var collider in colliders)
+        {
+            Debug.Log(collider.gameObject.name);
+        }
+        return true ;
     }
 }
