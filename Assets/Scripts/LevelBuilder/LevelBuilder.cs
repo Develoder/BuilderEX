@@ -83,9 +83,14 @@ public class LevelBuilder : EditorWindow
         if (!Raycast(out Vector3 contactPoint)) 
             return;
 
+        DrawPointer(contactPoint,Color.red);
+        DrawPreview(contactPoint);
+
         if (_selectedConstruction == Construction.Ground)
         {
             // Блок превью для тайла
+            CheckAllow(contactPoint);
+            CreateObject(contactPoint);
         }
         else
         {
@@ -133,7 +138,11 @@ public class LevelBuilder : EditorWindow
     private void DrawPointer(Vector3 position, Color color)
     {
         Handles.color = color;
-        Handles.DrawWireCube(position, Vector3.one);
+        Quaternion rotation = Quaternion.Euler(0, 0, 0);
+        Mesh mesh = _catalog[_selectedElement].GetComponentsInChildren<MeshFilter>()[0].sharedMesh;
+        Vector3 meshSize = mesh.bounds.size;
+        Collider[] colliders = Physics.OverlapBox(position, meshSize, rotation, 6);
+        Handles.DrawWireCube(position, meshSize);
     }
     
     private void DrawPreview(Vector3 contactPoint)
@@ -267,9 +276,25 @@ public class LevelBuilder : EditorWindow
             _catalog.Add(AssetDatabase.LoadAssetAtPath(prefabFile, typeof(GameObject)) as GameObject);
     }
 
+
     private string FullPath()
     {
         //Debug.Log($"{_selectedConstruction} {(int)_selectedConstruction}");
         return _path + _nameFolderTab[(int)_selectedConstruction];
+    }
+    
+
+    private bool CheckAllow(Vector3 position)
+    {
+        Quaternion rotation = Quaternion.Euler(0, 0, 0);
+        Mesh mesh = _catalog[_selectedElement].GetComponentsInChildren<MeshFilter>()[0].sharedMesh;
+        Vector3 meshSize = mesh.bounds.size;
+        Collider[] colliders = Physics.OverlapBox(position, meshSize, rotation, 0);
+
+        foreach (var collider in colliders)
+        {
+            Debug.Log(collider.gameObject.name);
+        }
+        return true ;
     }
 }
