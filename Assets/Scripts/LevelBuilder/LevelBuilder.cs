@@ -88,6 +88,7 @@ public class LevelBuilder : EditorWindow
             return;
 
         DrawPreview(contactPoint);
+        DrawPointer(contactPoint);
         
         if (_selectedConstruction == Construction.Ground)
         {
@@ -155,12 +156,22 @@ public class LevelBuilder : EditorWindow
         return false;
     }
 
-    private void DrawPointer(Vector3 position, Color color)
+    private void DrawPointer(Vector3 position)
     {
-        Handles.color = color;
+        if(CheckAllow(position))
+        {
+            Handles.color = Color.white;
+        }
+        else
+        {
+            Handles.color = Color.red;
+            HandleUtility.AddDefaultControl(0);
+        }
+
         Quaternion rotation = Quaternion.Euler(0, 0, 0);
         Mesh mesh = _catalog[_selectedElement].GetComponentsInChildren<MeshFilter>()[0].sharedMesh;
         Vector3 meshSize = mesh.bounds.size;
+        meshSize.y = 0;
         Collider[] colliders = Physics.OverlapBox(position, meshSize, rotation, 6);
         Handles.DrawWireCube(position, meshSize);
     }
@@ -314,11 +325,7 @@ public class LevelBuilder : EditorWindow
         Vector3 meshSize = mesh.bounds.size / (_selectedConstruction == Construction.Ground ? 10 : 2);
         Collider[] colliders = Physics.OverlapBox(position, meshSize, rotation, GetLayerMask(false));
         
-        foreach (var collider in colliders)
-        {
-            Debug.Log($"Collider = {collider.name}");
-        }
-        return true;
+        return colliders.Length == 0;
     }
 
     private int GetLayerMask(bool forRay)
