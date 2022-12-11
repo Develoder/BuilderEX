@@ -20,14 +20,13 @@ public class LevelBuilder : EditorWindow
     private Vector2 _scrollPosition;
     private int _selectedElement;
     private int _lastSelectedElement;
+    private int _lastSelectedTool;
     private List<GameObject> _catalog = new List<GameObject>();
     private bool _building;
 
     private GameObject _createdObject;
     private GameObject[] _parents = new GameObject[3]; // 0 - Ground, 1 - Buildings, 2 - Environments
     private GameObject _previewObject;
-    // private Vector3 _previewScale = Vector3.zero;
-    // private Quaternion _previewRotation = Quaternion.identity;
 
     private Construction _selectedConstruction = Construction.Ground;
     private string[] _tabNames = new string[] {"Ground", "Buildings", "Environments"};
@@ -61,6 +60,12 @@ public class LevelBuilder : EditorWindow
         EditorGUILayout.EndVertical();
         
         Construction currentConstruction = (Construction)Enum.ToObject(typeof(Construction), selectedTool);
+
+        if (selectedTool != _lastSelectedTool)
+        {
+            _lastSelectedTool = selectedTool;
+            _building = false;
+        }
 
         if (currentConstruction != _selectedConstruction)
         {
@@ -169,8 +174,8 @@ public class LevelBuilder : EditorWindow
         }
 
         Quaternion rotation = Quaternion.Euler(0, 0, 0);
-        Mesh mesh = _catalog[_selectedElement].GetComponentsInChildren<MeshFilter>()[0].sharedMesh;
-        Vector3 meshSize = mesh.bounds.size;
+        Mesh mesh = _previewObject.GetComponentsInChildren<MeshFilter>()[0].sharedMesh;
+        Vector3 meshSize = mesh.bounds.size * _previewObject.transform.localScale.x;
         meshSize.y = 0;
         Collider[] colliders = Physics.OverlapBox(position, meshSize, rotation, 6);
         Handles.DrawWireCube(position, meshSize);
@@ -257,11 +262,11 @@ public class LevelBuilder : EditorWindow
                 break;
             //Вращать влево
             case KeyCode.Alpha5:
-                _previewObject.transform.RotateAround(_previewObject.transform.position, Vector3.up, 20);
+                _previewObject.transform.RotateAround(_previewObject.transform.position, Vector3.up, 15);
                 break;
             //Вращать вправо
             case KeyCode.Alpha6:
-                _previewObject.transform.RotateAround(_previewObject.transform.position, Vector3.down, 20);
+                _previewObject.transform.RotateAround(_previewObject.transform.position, Vector3.down, 15);
                 break;
         }
     }
@@ -322,7 +327,7 @@ public class LevelBuilder : EditorWindow
     {
         Quaternion rotation = Quaternion.Euler(0, 0, 0);
         Mesh mesh = _catalog[_selectedElement].GetComponentsInChildren<MeshFilter>()[0].sharedMesh;
-        Vector3 meshSize = mesh.bounds.size / (_selectedConstruction == Construction.Ground ? 10 : 2);
+        Vector3 meshSize = mesh.bounds.size * _previewObject.transform.localScale.x / (_selectedConstruction == Construction.Ground ? 10 : 2);
         Collider[] colliders = Physics.OverlapBox(position, meshSize, rotation, GetLayerMask(false));
         
         return colliders.Length == 0;
