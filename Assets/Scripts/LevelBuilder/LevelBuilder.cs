@@ -10,11 +10,12 @@ public class LevelBuilder : EditorWindow
 {
     private const string _path = "Assets/Editor Resources/";
     
-    private const int _groundLayerMask = 1 << 6; // Ground
-    private const int _TileLayerMask = 1 << 7; // Buildings
-    private const int _buildingsLayerMask = 1 << 8; // Buildingsprivate
-    private static int[] _layerMasks = new int[] { _TileLayerMask, _groundLayerMask, _buildingsLayerMask };
-    private const int _gridSize = 10;
+    private const int _tileLayerMask = 6; 
+    private const int _groundLayerMask = 7; 
+    private const int _buildingsLayerMask = 8; 
+    private const int _defaultLayerMask = 0; 
+    private static readonly int[] _layerMasks = new int[] { _tileLayerMask, _groundLayerMask, _buildingsLayerMask, _defaultLayerMask };
+    private const int _gridSize = 30;
 
     private Vector2 _scrollPosition;
     private int _selectedElement;
@@ -88,23 +89,26 @@ public class LevelBuilder : EditorWindow
         if (!Raycast(out Vector3 contactPoint)) 
             return;
 
+        DrawPreview(contactPoint);
+        
         if (_selectedConstruction == Construction.Ground)
         {
             // Блок превью для тайла
-            if(CheckAllow(contactPoint,_tileLayerMask))
+            if(CheckAllow(contactPoint))
+                if (CheckInput())
+                    CreateObject(contactPoint);
+        }
+        else if(_selectedConstruction == Construction.Buildings)
+        {
+            //DrawPointer(contactPoint, Color.red);
+            if(CheckAllow(contactPoint))
                 if (CheckInput())
                     CreateObject(contactPoint);
         }
         else
         {
-            //DrawPointer(contactPoint, Color.red);
-            DrawPreview(contactPoint);
-            
-            if (CheckInput() && CheckAllow(contactPoint, _buildingsLayerMask))
-            {
+            if (CheckInput())
                 CreateObject(contactPoint);
-            }
-                
         }
         
         sceneView.Repaint();
@@ -131,12 +135,13 @@ public class LevelBuilder : EditorWindow
         Ray guiRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
         contactPoint = Vector3.zero;
         
-        if (Physics.Raycast(guiRay, out RaycastHit raycastHit, Mathf.Infinity, _layerMasks[(int)_selectedConstruction]))
+        if (Physics.Raycast(guiRay, out RaycastHit raycastHit, Mathf.Infinity, GetLayerMask(true)))
         {
             if(_selectedConstruction == Construction.Ground)    //Если тайллы, то по сетке.
             {
-                int contactPointX = (int)Math.Round(raycastHit.point.x / _gridSize) * _gridSize; ;
-                int contactPointZ = (int)Math.Round(raycastHit.point.z / _gridSize) * _gridSize; ;
+                contactPoint = raycastHit.point;
+                float contactPointX = raycastHit.point.x - (raycastHit.point.x % _gridSize); 
+                float contactPointZ = raycastHit.point.z - (raycastHit.point.z % _gridSize); 
                 contactPoint = new Vector3(contactPointX, 0, contactPointZ);
                 return true;
             }
@@ -168,8 +173,6 @@ public class LevelBuilder : EditorWindow
             CreatePreviewObject();
         
         _previewObject.transform.position = contactPoint;        
-        // _previewObject.transform.rotation = _previewRotation;
-        // _previewObject.transform.localScale = _previewScale;
     }
 
     private void CheckChangeItemCatalog()
@@ -211,7 +214,10 @@ public class LevelBuilder : EditorWindow
         
         _createdObject = Instantiate(prefab, parent.transform, true);
         _createdObject.transform.position = position;
-        _createdObject.layer = parent.gameObject.layer;
+        _createdObject.layer = GetLayer();
+        
+        _createdObject.transform.rotation = _previewObject.transform.rotation;
+        _createdObject.transform.localScale = _previewObject.transform.localScale;
 
         Undo.RegisterCreatedObjectUndo(_createdObject, "Create Building");
     }
@@ -295,7 +301,6 @@ public class LevelBuilder : EditorWindow
             _catalog.Add(AssetDatabase.LoadAssetAtPath(prefabFile, typeof(GameObject)) as GameObject);
     }
 
-
     private string FullPath()
     {
         //Debug.Log($"{_selectedConstruction} {(int)_selectedConstruction}");
@@ -303,17 +308,31 @@ public class LevelBuilder : EditorWindow
     }
     
 
-    private bool CheckAllow(Vector3 position, int layerMask)
+    private bool CheckAllow(Vector3 position)
     {
         Quaternion rotation = Quaternion.Euler(0, 0, 0);
         Mesh mesh = _catalog[_selectedElement].GetComponentsInChildren<MeshFilter>()[0].sharedMesh;
-        Vector3 meshSize = mesh.bounds.size;
-        Collider[] colliders = Physics.OverlapBox(position, meshSize/2, rotation, layerMask); //meshSize /2 тк в параметр идет половина размера 
-
+        Vector3 meshSize = mesh.bounds.size / (_selectedConstruction == Construction.Ground ? 10 : 2);
+        Collider[] colliders = Physics.OverlapBox(position, meshSize, rotation, GetLayerMask(false));
+        
         foreach (var collider in colliders)
         {
-            Debug.Log(collider.gameObject.name);
+            Debug.Log($"Collider = {collider.name}");
         }
         return true;
+    }
+
+    private int GetLayerMask(bool forRay)
+    {
+        if (_selectedConstruction == Construction.Environments)
+            return forRay ? (1 << _groundLayerMask) : 0;
+        return 1 << _layerMasks[Convert.ToInt32(!forRay) + (int)_selectedConstruction];
+    }
+
+    private int GetLayer()
+    {
+        if (_selectedConstruction == Construction.Environments)
+            return _defaultLayerMask;
+        return 1 + _layerMasks[(int)_selectedConstruction];
     }
 }
