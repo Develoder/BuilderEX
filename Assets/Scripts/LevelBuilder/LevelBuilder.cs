@@ -51,8 +51,15 @@ public class LevelBuilder : EditorWindow
         DrawParents();
         
         EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
-        
+        _building = GUILayout.Toggle(_building, "Start building", "Button", GUILayout.Height(60));
+        EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
         int selectedTool = GUILayout.Toolbar((int)_selectedConstruction, _tabNames);
+        EditorGUILayout.BeginVertical(GUI.skin.window);
+        _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
+        DrawCatalog(GetCatalogIcons());
+        EditorGUILayout.EndScrollView();
+        EditorGUILayout.EndVertical();
+        
         Construction currentConstruction = (Construction)Enum.ToObject(typeof(Construction), selectedTool);
 
         if (currentConstruction != _selectedConstruction)
@@ -65,15 +72,6 @@ public class LevelBuilder : EditorWindow
             if (_previewObject != null)
                 //DrawObjectSettings();
                 EditionParametersPreview();
-
-        EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
-        _building = GUILayout.Toggle(_building, "Start building", "Button", GUILayout.Height(60));
-        EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
-        EditorGUILayout.BeginVertical(GUI.skin.window);
-        _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
-        DrawCatalog(GetCatalogIcons());
-        EditorGUILayout.EndScrollView();
-        EditorGUILayout.EndVertical();
         
         CheckChangeItemCatalog();
     }
@@ -236,21 +234,22 @@ public class LevelBuilder : EditorWindow
     {
         if (Event.current.type != EventType.KeyDown)
             return;
-        Debug.Log(Event.current.keyCode);
         switch (Event.current.keyCode)
         {
-            case KeyCode.V:
+            case KeyCode.Alpha4:
                 _previewObject.transform.localScale +=  Vector3.one * 0.1f;
                 break;
-            case KeyCode.C:
+            case KeyCode.Alpha3:
                 _previewObject.transform.localScale -=  Vector3.one * 0.1f;
+                if (_previewObject.transform.localScale.x < 0.05f)
+                    _previewObject.transform.localScale = Vector3.one * 0.05f;
                 break;
             //Вращать влево
-            case KeyCode.F:
+            case KeyCode.Alpha5:
                 _previewObject.transform.RotateAround(_previewObject.transform.position, Vector3.up, 20);
                 break;
             //Вращать вправо
-            case KeyCode.G:
+            case KeyCode.Alpha6:
                 _previewObject.transform.RotateAround(_previewObject.transform.position, Vector3.down, 20);
                 break;
         }
