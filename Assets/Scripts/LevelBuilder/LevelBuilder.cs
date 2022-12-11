@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.PlayerLoop;
 
 public class LevelBuilder : EditorWindow
 {
@@ -74,9 +75,9 @@ public class LevelBuilder : EditorWindow
         }
 
         
-            if (_previewObject != null)
-                //DrawObjectSettings();
-                EditionParametersPreview();
+        if (_previewObject != null)
+            //DrawObjectSettings();
+            EditionParametersPreview();
         
         CheckChangeItemCatalog();
     }
@@ -132,9 +133,8 @@ public class LevelBuilder : EditorWindow
        
        EditorGUILayout.EndVertical();
    }
-    
 
-    private bool Raycast(out Vector3 contactPoint)
+   private bool Raycast(out Vector3 contactPoint)
     {
         Ray guiRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
         contactPoint = Vector3.zero;
