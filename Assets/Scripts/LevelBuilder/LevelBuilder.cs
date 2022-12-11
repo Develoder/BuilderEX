@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using UnityEditor;
@@ -8,9 +9,12 @@ using UnityEditor;
 public class LevelBuilder : EditorWindow
 {
     private const string _path = "Assets/Editor Resources/";
+    
     private const int _groundLayerMask = 1 << 6; // Ground
     private const int _TileLayerMask = 1 << 7; // Buildings
-    private const int _buildingsLayerMask = 1 << 8; // Buildings
+    private const int _buildingsLayerMask = 1 << 8; // Buildingsprivate
+    private static int[] _layerMasks = new int[] { _TileLayerMask, _groundLayerMask, _buildingsLayerMask };
+    
     
     private Vector2 _scrollPosition;
     private int _selectedElement;
@@ -38,7 +42,7 @@ public class LevelBuilder : EditorWindow
     {
         SceneView.duringSceneGui -= OnSceneGUI;
         SceneView.duringSceneGui += OnSceneGUI;
-        RefreshCatalog();
+        //RefreshCatalog();
     }
 
     private void OnGUI()
@@ -46,7 +50,6 @@ public class LevelBuilder : EditorWindow
         DrawParents();
         
         EditorGUILayout.LabelField("", GUI.skin.horizontalSlider);
-        
         
         int selectedTool = GUILayout.Toolbar((int)_selectedConstruction, _tabNames);
         Construction currentConstruction = (Construction)Enum.ToObject(typeof(Construction), selectedTool);
@@ -58,7 +61,7 @@ public class LevelBuilder : EditorWindow
         }
 
         if (_selectedConstruction != Construction.Ground)
-            if (_createdObject != null)
+            if (_previewObject != null)
                 //DrawObjectSettings();
                 EditionParametersPreview();
 
@@ -85,12 +88,10 @@ public class LevelBuilder : EditorWindow
         if (!Raycast(out Vector3 contactPoint)) 
             return;
 
-        DrawPointer(contactPoint,Color.red);
-        DrawPreview(contactPoint);
-
         if (_selectedConstruction == Construction.Ground)
         {
             // Блок превью для тайла
+            DrawPreview(contactPoint);
             if(CheckAllow(contactPoint))
                 if (CheckInput())
                     CreateObject(contactPoint);
@@ -118,6 +119,7 @@ public class LevelBuilder : EditorWindow
            Construction type = (Construction)Enum.ToObject(typeof(Construction), i);
            _parents[i] = (GameObject)EditorGUILayout.ObjectField(type.ToString(), _parents[i], typeof(GameObject), true);
        }
+       
        EditorGUILayout.EndVertical();
    }
     
@@ -126,8 +128,8 @@ public class LevelBuilder : EditorWindow
     {
         Ray guiRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
         contactPoint = Vector3.zero;
-
-        if (Physics.Raycast(guiRay, out RaycastHit raycastHit, Mathf.Infinity, _groundLayerMask))
+        
+        if (Physics.Raycast(guiRay, out RaycastHit raycastHit, Mathf.Infinity, _layerMasks[(int)_selectedConstruction]))
         {
             contactPoint = raycastHit.point;
             return true;
@@ -193,9 +195,11 @@ public class LevelBuilder : EditorWindow
         if (_selectedElement >= _catalog.Count) return;
         
         GameObject prefab = _catalog[_selectedElement];
-
-        _createdObject = Instantiate(prefab, _parents[(int)_selectedConstruction].transform, true);
+        GameObject parent = _parents[(int)_selectedConstruction];
+        
+        _createdObject = Instantiate(prefab, parent.transform, true);
         _createdObject.transform.position = position;
+        _createdObject.layer = parent.gameObject.layer;
 
         Undo.RegisterCreatedObjectUndo(_createdObject, "Create Building");
     }
