@@ -14,8 +14,8 @@ public class LevelBuilder : EditorWindow
     private const int _TileLayerMask = 1 << 7; // Buildings
     private const int _buildingsLayerMask = 1 << 8; // Buildingsprivate
     private static int[] _layerMasks = new int[] { _TileLayerMask, _groundLayerMask, _buildingsLayerMask };
-    
-    
+    private const int _gridSize = 10;
+
     private Vector2 _scrollPosition;
     private int _selectedElement;
     private int _lastSelectedElement;
@@ -91,8 +91,7 @@ public class LevelBuilder : EditorWindow
         if (_selectedConstruction == Construction.Ground)
         {
             // Блок превью для тайла
-            DrawPreview(contactPoint);
-            if(CheckAllow(contactPoint))
+            if(CheckAllow(contactPoint,_tileLayerMask))
                 if (CheckInput())
                     CreateObject(contactPoint);
         }
@@ -100,9 +99,12 @@ public class LevelBuilder : EditorWindow
         {
             //DrawPointer(contactPoint, Color.red);
             DrawPreview(contactPoint);
-
-            if (CheckInput())
+            
+            if (CheckInput() && CheckAllow(contactPoint, _buildingsLayerMask))
+            {
                 CreateObject(contactPoint);
+            }
+                
         }
         
         sceneView.Repaint();
@@ -131,8 +133,18 @@ public class LevelBuilder : EditorWindow
         
         if (Physics.Raycast(guiRay, out RaycastHit raycastHit, Mathf.Infinity, _layerMasks[(int)_selectedConstruction]))
         {
-            contactPoint = raycastHit.point;
-            return true;
+            if(_selectedConstruction == Construction.Ground)    //Если тайллы, то по сетке.
+            {
+                int contactPointX = (int)Math.Round(raycastHit.point.x / _gridSize) * _gridSize; ;
+                int contactPointZ = (int)Math.Round(raycastHit.point.z / _gridSize) * _gridSize; ;
+                contactPoint = new Vector3(contactPointX, 0, contactPointZ);
+                return true;
+            }
+            else
+            {
+                contactPoint = raycastHit.point;
+                return true;
+            }
         }
         
         if (_previewObject != null)
@@ -291,12 +303,12 @@ public class LevelBuilder : EditorWindow
     }
     
 
-    private bool CheckAllow(Vector3 position)
+    private bool CheckAllow(Vector3 position, int layerMask)
     {
         Quaternion rotation = Quaternion.Euler(0, 0, 0);
         Mesh mesh = _catalog[_selectedElement].GetComponentsInChildren<MeshFilter>()[0].sharedMesh;
         Vector3 meshSize = mesh.bounds.size;
-        Collider[] colliders = Physics.OverlapBox(position, meshSize, rotation, _buildingsLayerMask);
+        Collider[] colliders = Physics.OverlapBox(position, meshSize/2, rotation, layerMask); //meshSize /2 тк в параметр идет половина размера 
 
         foreach (var collider in colliders)
         {
