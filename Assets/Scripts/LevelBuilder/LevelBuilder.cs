@@ -73,7 +73,7 @@ public class LevelBuilder : EditorWindow
             RefreshCatalog();
         }
 
-        if (_selectedConstruction != Construction.Ground)
+        
             if (_previewObject != null)
                 //DrawObjectSettings();
                 EditionParametersPreview();
@@ -253,20 +253,42 @@ public class LevelBuilder : EditorWindow
         switch (Event.current.keyCode)
         {
             case KeyCode.Alpha4:
-                _previewObject.transform.localScale +=  Vector3.one * 0.1f;
+                if (_selectedConstruction != Construction.Ground)
+                {
+                    _previewObject.transform.localScale += Vector3.one * 0.1f;
+                }   
                 break;
+
             case KeyCode.Alpha3:
-                _previewObject.transform.localScale -=  Vector3.one * 0.1f;
-                if (_previewObject.transform.localScale.x < 0.05f)
-                    _previewObject.transform.localScale = Vector3.one * 0.05f;
+                if (_selectedConstruction != Construction.Ground)
+                {
+                    _previewObject.transform.localScale -= Vector3.one * 0.1f;
+                    if (_previewObject.transform.localScale.x < 0.05f)
+                        _previewObject.transform.localScale = Vector3.one * 0.05f;
+                }    
                 break;
+
             //Вращать влево
             case KeyCode.Alpha5:
-                _previewObject.transform.RotateAround(_previewObject.transform.position, Vector3.up, 15);
+                if (_selectedConstruction != Construction.Ground)
+                {
+                    _previewObject.transform.RotateAround(_previewObject.transform.position, Vector3.up, 20);
+                }
+                else
+                {
+                    _previewObject.transform.RotateAround(_previewObject.transform.position, Vector3.up, 90);
+                }
                 break;
             //Вращать вправо
             case KeyCode.Alpha6:
-                _previewObject.transform.RotateAround(_previewObject.transform.position, Vector3.down, 15);
+                if (_selectedConstruction != Construction.Ground)
+                {
+                    _previewObject.transform.RotateAround(_previewObject.transform.position, Vector3.down, 20);
+                }
+                else
+                {
+                    _previewObject.transform.RotateAround(_previewObject.transform.position, Vector3.down, 90);
+                }
                 break;
         }
     }
