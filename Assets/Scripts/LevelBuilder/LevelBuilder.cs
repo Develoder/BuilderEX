@@ -6,6 +6,7 @@ using System.Reflection;
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.PlayerLoop;
+using UnityEngine.UIElements;
 
 public class LevelBuilder : EditorWindow
 {
@@ -57,6 +58,7 @@ public class LevelBuilder : EditorWindow
         EditorGUILayout.BeginVertical(GUI.skin.window);
         _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
         DrawCatalog(GetCatalogIcons());
+            
         EditorGUILayout.EndScrollView();
         EditorGUILayout.EndVertical();
         
@@ -71,6 +73,7 @@ public class LevelBuilder : EditorWindow
         if (currentConstruction != _selectedConstruction)
         {
             _selectedConstruction = currentConstruction;
+            rootVisualElement.Clear();
             RefreshCatalog();
         }
 
@@ -173,11 +176,9 @@ public class LevelBuilder : EditorWindow
             HandleUtility.AddDefaultControl(0);
         }
 
-        Quaternion rotation = Quaternion.Euler(0, 0, 0);
         Mesh mesh = _previewObject.GetComponentsInChildren<MeshFilter>()[0].sharedMesh;
         Vector3 meshSize = mesh.bounds.size * _previewObject.transform.localScale.x;
         meshSize.y = 0;
-        Collider[] colliders = Physics.OverlapBox(position, meshSize, rotation, 6);
         Handles.DrawWireCube(position, meshSize);
     }
     
@@ -359,7 +360,7 @@ public class LevelBuilder : EditorWindow
 
     private bool CheckAllow(Vector3 position)
     {
-        Quaternion rotation = Quaternion.Euler(0, 0, 0);
+        Quaternion rotation = _previewObject.transform.rotation;
         Mesh mesh = _catalog[_selectedElement].GetComponentsInChildren<MeshFilter>()[0].sharedMesh;
         Vector3 meshSize = mesh.bounds.size * _previewObject.transform.localScale.x / (_selectedConstruction == Construction.Ground ? 10 : 2);
         Collider[] colliders = Physics.OverlapBox(position, meshSize, rotation, GetLayerMask(false));
