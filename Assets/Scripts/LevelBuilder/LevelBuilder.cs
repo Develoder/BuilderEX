@@ -250,45 +250,57 @@ public class LevelBuilder : EditorWindow
     {
         if (Event.current.type != EventType.KeyDown)
             return;
+
+        switch (_selectedConstruction)
+        {
+            case Construction.Ground:
+                EditionParametersPreviewGround();
+                break;
+            case Construction.Buildings:
+                EditionParametersPreviewBuildings();
+                break;
+            case Construction.Environments:
+                EditionParametersPreviewBuildings();
+                break;
+        }
+    }
+
+    private void EditionParametersPreviewGround()
+    {
+        switch (Event.current.keyCode)
+        {
+            //Вращать влево
+            case KeyCode.Alpha5:
+                _previewObject.transform.RotateAround(_previewObject.transform.position, Vector3.up, 90);
+                break;
+            //Вращать вправо
+            case KeyCode.Alpha6:
+                _previewObject.transform.RotateAround(_previewObject.transform.position, Vector3.down, 90);
+                break;
+        }
+    }
+    
+    private void EditionParametersPreviewBuildings()
+    {
         switch (Event.current.keyCode)
         {
             case KeyCode.Alpha4:
-                if (_selectedConstruction != Construction.Ground)
-                {
-                    _previewObject.transform.localScale += Vector3.one * 0.1f;
-                }   
+                _previewObject.transform.localScale += Vector3.one * 0.1f;
                 break;
 
             case KeyCode.Alpha3:
-                if (_selectedConstruction != Construction.Ground)
-                {
-                    _previewObject.transform.localScale -= Vector3.one * 0.1f;
-                    if (_previewObject.transform.localScale.x < 0.05f)
-                        _previewObject.transform.localScale = Vector3.one * 0.05f;
-                }    
+                _previewObject.transform.localScale -= Vector3.one * 0.1f;
+                if (_previewObject.transform.localScale.x < 0.05f)
+                    _previewObject.transform.localScale = Vector3.one * 0.05f;
                 break;
 
             //Вращать влево
             case KeyCode.Alpha5:
-                if (_selectedConstruction != Construction.Ground)
-                {
-                    _previewObject.transform.RotateAround(_previewObject.transform.position, Vector3.up, 20);
-                }
-                else
-                {
-                    _previewObject.transform.RotateAround(_previewObject.transform.position, Vector3.up, 90);
-                }
+                _previewObject.transform.RotateAround(_previewObject.transform.position, Vector3.up, 20);
                 break;
             //Вращать вправо
             case KeyCode.Alpha6:
-                if (_selectedConstruction != Construction.Ground)
-                {
-                    _previewObject.transform.RotateAround(_previewObject.transform.position, Vector3.down, 20);
-                }
-                else
-                {
-                    _previewObject.transform.RotateAround(_previewObject.transform.position, Vector3.down, 90);
-                }
+                _previewObject.transform.RotateAround(_previewObject.transform.position, Vector3.down, 20);
                 break;
         }
     }
